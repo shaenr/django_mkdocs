@@ -1,0 +1,8 @@
+site_name: My Docs
+
+docs_dir: 'mkdocs'
+site_dir: 'docs/static/mkdocs_build'
+
+pages:
+  - Home: index.md
+  - Article: article.md
