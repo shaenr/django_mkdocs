@@ -1,44 +1,46 @@
 # Integrading a password-protected MkDocs in Django
 
-It's about time to that big `README.md` file from your project in something that supports a nice-looking markdown-driven documentaion, such as [MkDocs](http://www.mkdocs.org/)
+> TL;DR [you can find the source here](https://github.com/HackSoftware/django_mkdocs)
 
-But you have the following requirements:
+It's about time to turn that big `README.md` file from your project into something that supports a nice-looking markdown-driven documentaion, such as [MkDocs](http://www.mkdocs.org/)
 
-* You want to serve it as part of your Django project. This means - being self-contained.
-* And also, **you want it to be password-protected**, using your existing users in the system.
+But we have the following requirements:
+
+* We want to serve it as part of your Django project. This means - being self-contained.
+* And also, **we want it to be password-protected**, using existing users in the system.
 
 In this article, we are going to do exactly that.
 
 ## What we want to achieve?
 
-We want to open our project at `/docs`, be redirect to a login page, and after that, see the documentation, rendered at `/docs`.
+We want to open `/docs` and if we have login session, see the documentation. Otherwise - be redirected to login.
 
 ## The setup
 
 First, we are going to setup our django project and create `docs` app.
 
 ```bash
-django-admin startproject django_mkdocs
-cd django_mkdocs
-python manage.py startapp docs
+$ django-admin startproject django_mkdocs
+$ cd django_mkdocs
+$ python manage.py startapp docs
 ```
 
 And since we are going to serve the documentation as a static content from our docs app:
 
 ```bash
-mkdir docs/static
+$ mkdir docs/static
 ```
 
 Then, we need to install `MkDocs`:
 
 ```bash
-pip install mkdocs
+$ pip install mkdocs
 ```
 
 and start a new `MkDocs` project:
 
 ```bash
-mkdocs new mkdocs
+$ mkdocs new mkdocs
 ```
 
 This will create a new documentation project in `mkdocs` folder. **This is where we are going to store our documentation markdown files.**
@@ -46,9 +48,9 @@ This will create a new documentation project in `mkdocs` folder. **This is where
 We need to do some moving around, since we want to end up with `mkdocs.yml` at the same directory level as `manage.py`:
 
 ```bash
-mv mkdocs/docs/index.md mkdocs/
-mv mkdocs/mkdocs.yml .
-rm -r mkdocs/docs
+$ mv mkdocs/docs/index.md mkdocs/
+$ mv mkdocs/mkdocs.yml .
+$ rm -r mkdocs/docs
 ```
 
 We need to end up with the following dir structure:
@@ -90,7 +92,7 @@ Of course, those folder names can be changed to whatever you like.
 
 We end up with the following `mkdocs.yml` file:
 
-```
+```bash
 site_name: My Docs
 
 docs_dir: 'mkdocs'
@@ -103,7 +105,7 @@ pages:
 Now, if we run the test mkdocs server:
 
 ```bash
-mkdocs serve
+$ mkdocs serve
 ```
 
 We can open `http://localhost:8000` and see our documentation there.
@@ -111,7 +113,7 @@ We can open `http://localhost:8000` and see our documentation there.
 Finally, lets build our documentation:
 
 ```bash
-mkdocs build
+$ mkdocs build
 ```
 
 You can now open `docs/static/mkdocs_build` and explore it. Open `index.html` in your browser. This is a neat staic web page with our documentation.
@@ -219,7 +221,7 @@ Now, we are almost done. We need to get tha `path` and try to serve that file fr
 
 We will start with adding `DOCS_DIR` settings in our `settings.py` file, so we can easily concatenate file paths after that.
 
-```
+```python
 """
 django_mkdocs/settings.py
 """
@@ -306,7 +308,7 @@ Now opening `http://localhost:8000/docs/` opens the index page of the documentat
 Now, we have this `mkdocs_build` string defined both in `settings.py` and `mkdocs.yml`. We can dry things up with the following code:
 
 ```bash
-pip install PyYAML
+$ pip install PyYAML
 ```
 
 And change `settings.py` to look like that:
@@ -378,7 +380,7 @@ def serve_docs(request, path):
     return serve(request, path, insecure=True)
 ```
 
-### A security consideration
+## A security consideration
 
 Now, if you have other static files, there's a big chance of having `collectstatic` as part of your deployment procedure.
 
@@ -387,7 +389,7 @@ This will also include the `mkdocs_build` folder **and everyone will have access
 We can avoid putting our documentation in the `STATIC_ROOT` directory, by ignoring it when calling `collectstatic`:
 
 ```bash
-python manage.py collectstatic -i mkdocs_build
+$ python manage.py collectstatic -i mkdocs_build
 ```
 
 ## Overview
@@ -401,10 +403,10 @@ If you read the documentation about [`django.contrib.staticfiles.views.serve`](h
 **Depending on your needs, this can be good enough.**
 
 * About the **insecure** part, here is a good [StackOverflow thread](http://stackoverflow.com/questions/31097333/why-is-serving-static-files-insecure) about it.
-* About the **performance** part, here is a random benchmark, done with [wrk](https://github.com/wg/wrk), on gunicorn with 2 workers:
+* About the **performance** part, here is a random benchmark, done with [wrk](https://github.com/wg/wrk), on gunicorn with 2 workers (without the `@login_required` to hit docs index)
 
 ```bash
-./wrk -t2 -c10 -d30s http://localhost:8000/docs/
+$ ./wrk -t2 -c10 -d30s http://localhost:8000/docs/
 Running 30s test @ http://localhost:8000/docs/
   2 threads and 10 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
@@ -418,4 +420,4 @@ Transfer/sec:      6.63MB
 
 But for the sake of performance, we will take a look at different approaches for solving this problem in our next articles.
 
-For now, you can find the complete example project here.
+[For now, you can find the complete example project here.](https://github.com/HackSoftware/django_mkdocs)
